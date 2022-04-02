@@ -21,12 +21,11 @@ static inline uint32_t lrot32(uint32_t num, uint8_t rotcount)
 	return (num << rotcount) | (num >> (32 - rotcount));
 }
 
-Bytes::ByteString sha1(const Bytes::ByteString & msg)
+std::basic_string<unsigned char> sha1(const std::basic_string_view<unsigned char> msg)
 {
 	const size_t size_bytes = msg.size();
 	const uint64_t size_bits = size_bytes * 8;
-	Bytes::ByteString bstr = msg;
-	Bytes::ByteStringDestructor asplode(&bstr);
+	std::basic_string<unsigned char> bstr = { msg.begin(), msg.end() };
 
 	// the size of msg in bits is always even. adding the '1' bit will make
 	// it odd and therefore incongruent to 448 modulo 512, so we can get
@@ -52,8 +51,7 @@ Bytes::ByteString sha1(const Bytes::ByteString & msg)
 	// for each 64-byte chunk
 	for (size_t i = 0; i < bstr.size()/64; ++i)
 	{
-		Bytes::ByteString chunk(bstr.begin() + i*64, bstr.begin() + (i+1)*64);
-		Bytes::ByteStringDestructor xplode(&chunk);
+		std::basic_string_view chunk(bstr.begin() + i*64, bstr.begin() + (i+1)*64);
 
 		uint32_t words[80];
 		size_t j;
@@ -135,32 +133,26 @@ Bytes::ByteString sha1(const Bytes::ByteString & msg)
 	}
 
 	// assemble the digest
-	Bytes::ByteString first  = Bytes::u32beToByteString(h0);
-	Bytes::ByteStringDestructor x1(&first);
-	Bytes::ByteString second = Bytes::u32beToByteString(h1);
-	Bytes::ByteStringDestructor x2(&second);
-	Bytes::ByteString third  = Bytes::u32beToByteString(h2);
-	Bytes::ByteStringDestructor x3(&third);
-	Bytes::ByteString fourth = Bytes::u32beToByteString(h3);
-	Bytes::ByteStringDestructor x4(&fourth);
-	Bytes::ByteString fifth  = Bytes::u32beToByteString(h4);
-	Bytes::ByteStringDestructor x5(&fifth);
+	const auto first  = Bytes::u32beToByteString(h0);
+	const auto second = Bytes::u32beToByteString(h1);
+	const auto third  = Bytes::u32beToByteString(h2);
+	const auto fourth = Bytes::u32beToByteString(h3);
+	const auto fifth  = Bytes::u32beToByteString(h4);
 
 	return first + second + third + fourth + fifth;
 }
 
-Bytes::ByteString hmacSha1(const Bytes::ByteString & key, const Bytes::ByteString & msg, size_t blockSize = 64);
+std::basic_string<unsigned char> hmacSha1(const std::basic_string_view<unsigned char> key, const std::basic_string_view<unsigned char> msg, size_t blockSize = 64);
 
-Bytes::ByteString hmacSha1(const Bytes::ByteString & key, const Bytes::ByteString & msg, size_t blockSize)
+std::basic_string<unsigned char> hmacSha1(const std::basic_string_view<unsigned char> key, const std::basic_string_view<unsigned char> msg, size_t blockSize)
 {
-	Bytes::ByteString realKey = key;
-	Bytes::ByteStringDestructor asplode(&realKey);
+	std::basic_string<unsigned char> realKey = { key.begin(), key.end() };
 
 	if (realKey.size() > blockSize)
 	{
 		// resize by calculating hash
-		Bytes::ByteString newRealKey = sha1(realKey);
-		Bytes::swizzleByteStrings(&realKey, &newRealKey);
+		std::basic_string<unsigned char> newRealKey = sha1(realKey);
+		Bytes::swizzleByteStrings(realKey, newRealKey);
 	}
 	if (realKey.size() < blockSize)
 	{
@@ -169,10 +161,8 @@ Bytes::ByteString hmacSha1(const Bytes::ByteString & key, const Bytes::ByteStrin
 	}
 
 	// prepare the pad keys
-	Bytes::ByteString innerPadKey = realKey;
-	Bytes::ByteStringDestructor xplodeI(&innerPadKey);
-	Bytes::ByteString outerPadKey = realKey;
-	Bytes::ByteStringDestructor xplodeO(&outerPadKey);
+	std::basic_string<unsigned char> innerPadKey = realKey;
+	std::basic_string<unsigned char> outerPadKey = realKey;
 
 	// transform the pad keys
 	for (size_t i = 0; i < realKey.size(); ++i)
@@ -182,12 +172,9 @@ Bytes::ByteString hmacSha1(const Bytes::ByteString & key, const Bytes::ByteStrin
 	}
 
 	// sha1(outerPadKey + sha1(innerPadKey + msg))
-	Bytes::ByteString innerMsg  = innerPadKey + msg;
-	Bytes::ByteStringDestructor xplodeIM(&innerMsg);
-	Bytes::ByteString innerHash = sha1(innerMsg);
-	Bytes::ByteStringDestructor xplodeIH(&innerHash);
-	Bytes::ByteString outerMsg  = outerPadKey + innerHash;
-	Bytes::ByteStringDestructor xplodeOM(&outerMsg);
+    innerPadKey.append(msg);
+	std::basic_string<unsigned char> innerHash = sha1(innerPadKey);
+	std::basic_string<unsigned char> outerMsg  = outerPadKey + innerHash;
 
 	return sha1(outerMsg);
 }
@@ -203,12 +190,12 @@ int main(void)
 	const uint8_t * strCog   = reinterpret_cast<const uint8_t *>("The quick brown fox jumps over the lazy cog");
 	const uint8_t * strKey   = reinterpret_cast<const uint8_t *>("key");
 
-	Bytes::ByteString shaEmpty = sha1(Bytes::ByteString(strEmpty));
-	Bytes::ByteString shaDog   = sha1(Bytes::ByteString(strDog));
-	Bytes::ByteString shaCog   = sha1(Bytes::ByteString(strCog));
+	std::basic_string_view<unsigned char> shaEmpty = sha1(Bytes::ByteString(strEmpty));
+	std::basic_string_view<unsigned char> shaDog   = sha1(Bytes::ByteString(strDog));
+	std::basic_string_view<unsigned char> shaCog   = sha1(Bytes::ByteString(strCog));
 
-	Bytes::ByteString hmacShaEmpty  = hmacSha1(Bytes::ByteString(), Bytes::ByteString());
-	Bytes::ByteString hmacShaKeyDog = hmacSha1(strKey, strDog);
+	std::basic_string_view<unsigned char> hmacShaEmpty  = hmacSha1(Bytes::ByteString(), Bytes::ByteString());
+	std::basic_string_view<unsigned char> hmacShaKeyDog = hmacSha1(strKey, strDog);
 
 	std::cout
 		<< (Bytes::toHexString(shaEmpty) == "da39a3ee5e6b4b0d3255bfef95601890afd80709") << std::endl

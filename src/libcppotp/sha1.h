@@ -15,19 +15,19 @@
 namespace CppTotp
 {
 
-typedef Bytes::ByteString (*HmacFunc)(const Bytes::ByteString &, const Bytes::ByteString &);
+typedef std::basic_string<unsigned char> (*HmacFunc)(const std::basic_string_view<unsigned char>, const std::basic_string_view<unsigned char>);
 
 /**
  * Calculate the SHA-1 hash of the given message.
  */
-Bytes::ByteString sha1(const Bytes::ByteString & msg);
+std::basic_string<unsigned char> sha1(const std::basic_string_view<unsigned char> msg);
 
 /**
  * Calculate the HMAC-SHA-1 hash of the given key/message pair.
  *
  * @note Most services assume a block size of 64.
  */
-Bytes::ByteString hmacSha1(const Bytes::ByteString & key, const Bytes::ByteString & msg, size_t blockSize = 64);
+std::basic_string<unsigned char> hmacSha1(const std::basic_string_view<unsigned char> key, const std::basic_string_view<unsigned char> msg, std::size_t blockSize = 64);
 
 }
 

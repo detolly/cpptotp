@@ -1,13 +1,10 @@
 # The contents of this file have been placed into the public domain; see the
 # file COPYING for more details.
 
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.10)
 project (CppOtp)
 
-# activate C++11 mode
-if(CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif(CMAKE_COMPILER_IS_GNUCXX)
+set (CMAKE_CXX_STANDARD 20)
 
 # the static library
 add_library(cppotp STATIC
@@ -16,10 +13,7 @@ add_library(cppotp STATIC
 	src/libcppotp/sha1.cpp
 )
 
+set(CPPOTP_INCLUDE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(cppotp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 # the binary
-add_executable(gauche
-	src/gauche.cpp
-)
-target_link_libraries(gauche
-	cppotp
-)

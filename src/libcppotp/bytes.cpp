@@ -20,21 +20,13 @@ namespace CppTotp
 namespace Bytes
 {
 
-void clearByteString(ByteString * bstr)
-{
-	volatile Byte * bs = const_cast<volatile Byte *>(bstr->data());
+using Byte = unsigned char;
 
-	for (size_t i = 0; i < bstr->size(); ++i)
-	{
-		bs[i] = Byte(0);
-	}
-}
-
-void swizzleByteStrings(ByteString * target, ByteString * source)
+void swizzleByteStrings(std::basic_string<unsigned char>& target, std::basic_string<unsigned char>& source)
 {
-	clearByteString(target);
-	target->assign(*source);
-	clearByteString(source);
+    target.clear();
+	target.assign(source);
+	source.clear();
 }
 
 static char nibbleToLCHex(uint8_t nib)
@@ -75,7 +67,7 @@ static uint8_t hexToNibble(char c)
 	}
 }
 
-std::string toHexString(const ByteString & bstr)
+std::string toHexString(const std::basic_string_view<unsigned char> bstr)
 {
 	std::string ret;
 
@@ -88,7 +80,7 @@ std::string toHexString(const ByteString & bstr)
 	return ret;
 }
 
-ByteString fromHexStringSkipUnknown(const std::string & str)
+std::basic_string<unsigned char> fromHexStringSkipUnknown(const std::string_view str)
 {
 	std::string hstr;
 	for (char c : str)
@@ -109,7 +101,7 @@ ByteString fromHexStringSkipUnknown(const std::string & str)
 		throw std::invalid_argument("hex string (unknown characters ignored) length not divisible by 2");
 	}
 
-	ByteString ret;
+	std::basic_string<unsigned char> ret;
 	for (size_t i = 0; i < hstr.size(); i += 2)
 	{
 		uint8_t top = hexToNibble(hstr[i+0]);
@@ -120,9 +112,9 @@ ByteString fromHexStringSkipUnknown(const std::string & str)
 	return ret;
 }
 
-Bytes::ByteString u32beToByteString(uint32_t num)
+std::basic_string<unsigned char> u32beToByteString(uint32_t num)
 {
-	Bytes::ByteString ret;
+	std::basic_string<unsigned char> ret;
 	ret.push_back((num >> 24) & 0xFF);
 	ret.push_back((num >> 16) & 0xFF);
 	ret.push_back((num >>  8) & 0xFF);
@@ -130,16 +122,16 @@ Bytes::ByteString u32beToByteString(uint32_t num)
 	return ret;
 }
 
-Bytes::ByteString u64beToByteString(uint64_t num)
+std::basic_string<unsigned char> u64beToByteString(uint64_t num)
 {
-	Bytes::ByteString left  = u32beToByteString((num >> 32) & 0xFFFFFFFF);
-	Bytes::ByteString right = u32beToByteString((num >>  0) & 0xFFFFFFFF);
+	std::basic_string<unsigned char> left  = u32beToByteString((num >> 32) & 0xFFFFFFFF);
+	std::basic_string<unsigned char> right = u32beToByteString((num >>  0) & 0xFFFFFFFF);
 	return left + right;
 }
 
-static ByteString b32ChunkToBytes(const std::string & str)
+static std::basic_string<unsigned char> b32ChunkToBytes(const std::string_view str)
 {
-	ByteString ret;
+	std::basic_string<unsigned char> ret;
 	uint64_t whole = 0x00;
 	size_t padcount = 0;
 	size_t finalcount;
@@ -217,7 +209,7 @@ static inline uint64_t u64(uint8_t n)
 	return static_cast<uint64_t>(n);
 }
 
-static std::string bytesToB32Chunk(const ByteString & bs)
+static std::string bytesToB32Chunk(const std::basic_string_view<unsigned char> bs)
 {
 	if (bs.size() < 1 || bs.size() > 5)
 	{
@@ -280,28 +272,28 @@ static std::string bytesToB32Chunk(const ByteString & bs)
 	return ret;
 }
 
-ByteString fromBase32(const std::string & b32str)
+std::basic_string<unsigned char> fromBase32(const std::string_view b32str)
 {
 	if (b32str.size() % 8 != 0)
 	{
 		throw std::invalid_argument("base32 string length not divisible by 8");
 	}
 
-	ByteString ret;
+	std::basic_string<unsigned char> ret;
 
 	for (size_t i = 0; i < b32str.size(); i += 8)
 	{
 		std::string sub(b32str, i, 8);
-		ByteString chk = b32ChunkToBytes(sub);
+		std::basic_string<unsigned char> chk = b32ChunkToBytes(sub);
 		ret.append(chk);
 	}
 
 	return ret;
 }
 
-ByteString fromUnpaddedBase32(const std::string & b32str)
+std::basic_string<unsigned char> fromUnpaddedBase32(const std::string_view b32str)
 {
-	std::string newstr = b32str;
+	std::string newstr = std::string { b32str };
 
 	while (newstr.size() % 8 != 0)
 	{
@@ -311,7 +303,7 @@ ByteString fromUnpaddedBase32(const std::string & b32str)
 	return fromBase32(newstr);
 }
 
-std::string toBase32(const ByteString & bs)
+std::string toBase32(const std::basic_string_view<unsigned char> bs)
 {
 	std::string ret;
 
@@ -319,7 +311,7 @@ std::string toBase32(const ByteString & bs)
 	for (j = 0; j < bs.size() / 5; ++j)
 	{
 		i = j * 5;
-		ByteString sub(bs, i, 5);
+		std::basic_string<unsigned char> sub(bs, i, 5);
 		std::string chk = bytesToB32Chunk(sub);
 		ret.append(chk);
 	}
@@ -329,7 +321,7 @@ std::string toBase32(const ByteString & bs)
 	if (len > 0)
 	{
 		// block of size < 5 remains
-		ByteString sub(bs, i, std::string::npos);
+		std::basic_string<unsigned char> sub(bs, i, std::string::npos);
 		std::string chk = bytesToB32Chunk(sub);
 		ret.append(chk);
 	}

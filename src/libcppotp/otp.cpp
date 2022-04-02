@@ -18,19 +18,15 @@
 namespace CppTotp
 {
 
-Bytes::ByteString hmacSha1_64(const Bytes::ByteString & key, const Bytes::ByteString & msg)
+std::basic_string<unsigned char> hmacSha1_64(const std::basic_string_view<unsigned char> key, const std::basic_string_view<unsigned char> msg)
 {
 	return hmacSha1(key, msg, 64);
 }
 
-//uint32_t hotp(const Bytes::ByteString & key, const Bytes::ByteString & msg, size_t digitCount, HmacFunc hmacf)
-uint32_t hotp(const Bytes::ByteString & key, uint64_t counter, size_t digitCount, HmacFunc hmacf)
+uint32_t hotp(const std::basic_string_view<unsigned char> key, uint64_t counter, size_t digitCount, HmacFunc hmacf)
 {
-	Bytes::ByteString msg = Bytes::u64beToByteString(counter);
-	Bytes::ByteStringDestructor dmsg(&msg);
-
-	Bytes::ByteString hmac = hmacf(key, msg);
-	Bytes::ByteStringDestructor dhmac(&hmac);
+	std::basic_string<unsigned char> msg = Bytes::u64beToByteString(counter);
+	std::basic_string<unsigned char> hmac = hmacf(key, msg);
 
 	uint32_t digits10 = 1;
 	for (size_t i = 0; i < digitCount; ++i)
@@ -42,8 +38,7 @@ uint32_t hotp(const Bytes::ByteString & key, uint64_t counter, size_t digitCount
 	uint8_t offset = hmac[hmac.size()-1] & 0x0F;
 
 	// fetch the four bytes from the offset
-	Bytes::ByteString fourWord = hmac.substr(offset, 4);
-	Bytes::ByteStringDestructor dfourWord(&fourWord);
+	std::basic_string_view<unsigned char> fourWord = hmac.substr(offset, 4);
 
 	// turn them into a 32-bit integer
 	uint32_t ret =
@@ -58,7 +53,7 @@ uint32_t hotp(const Bytes::ByteString & key, uint64_t counter, size_t digitCount
 	return (ret & 0x7fffffff) % digits10;
 }
 
-uint32_t totp(const Bytes::ByteString & key, uint64_t timeNow, uint64_t timeStart, uint64_t timeStep, size_t digitCount, HmacFunc hmacf)
+uint32_t totp(const std::basic_string_view<unsigned char> key, uint64_t timeNow, uint64_t timeStart, uint64_t timeStep, size_t digitCount, HmacFunc hmacf)
 {
 	uint64_t timeValue = (timeNow - timeStart) / timeStep;
 	return hotp(key, timeValue, digitCount, hmacf);
@@ -75,7 +70,7 @@ int main(void)
 	uint64_t step   = 30;
 	uint8_t digitsH =  6;
 	uint8_t digitsT =  8;
-	const Bytes::ByteString key = reinterpret_cast<const uint8_t *>("12345678901234567890");
+	const std::basic_string<unsigned char> key = reinterpret_cast<const uint8_t *>("12345678901234567890");
 
 	std::cout
 		<< (hotp(key, 0, digitsH) == 755224)
@@ -96,7 +91,7 @@ int main(void)
 		<< (totp(key, 20000000000, start, step, digitsT) == 65353130)
 	<< std::endl;
 
-	const Bytes::ByteString tutestkey = reinterpret_cast<const uint8_t *>("HelloWorld");
+	const std::basic_string<unsigned char> tutestkey = reinterpret_cast<const uint8_t *>("HelloWorld");
 	std::cout << totp(tutestkey, time(NULL), 0, 30, 6) << std::endl;
 
 	return 0;
