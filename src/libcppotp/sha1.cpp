@@ -51,7 +51,7 @@ std::basic_string<unsigned char> sha1(const std::basic_string_view<unsigned char
 	// for each 64-byte chunk
 	for (size_t i = 0; i < bstr.size()/64; ++i)
 	{
-		std::basic_string_view chunk(bstr.begin() + i*64, bstr.begin() + (i+1)*64);
+		std::basic_string_view chunk(bstr.data() + i*64, bstr.data() + (i+1)*64);
 
 		uint32_t words[80];
 		size_t j;
